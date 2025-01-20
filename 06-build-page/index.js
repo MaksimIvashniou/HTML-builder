@@ -1,4 +1,5 @@
 const path = require('path');
+const { rm, mkdir } = require('fs/promises');
 
 const sourcePath = {
   template: path.join(__dirname, 'template.html'),
@@ -15,3 +16,8 @@ const bundle = {
   assets: path.join(dist, 'assets'),
   styles: path.join(dist, 'style.css'),
 };
+
+async function buildDist(targetPath) {
+  await rm(targetPath, { recursive: true, force: true });
+  await mkdir(targetPath, { recursive: true });
+}
