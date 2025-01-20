@@ -1,5 +1,5 @@
 const path = require('path');
-const { rm, mkdir } = require('fs/promises');
+const { readFile, writeFile, rm, mkdir, readdir } = require('fs/promises');
 
 const sourcePath = {
   template: path.join(__dirname, 'template.html'),
@@ -20,4 +20,25 @@ const bundle = {
 async function buildDist(targetPath) {
   await rm(targetPath, { recursive: true, force: true });
   await mkdir(targetPath, { recursive: true });
+}
+
+async function buildHtml(sourcePath, targetPath) {
+  const extension = '.html';
+  const dirents = await readdir(sourcePath.components, { withFileTypes: true });
+
+  let htmlContent = await readFile(sourcePath.template, 'utf-8');
+
+  for (const dirent of dirents) {
+    if (dirent.isFile() && path.extname(dirent.name) === extension) {
+      const componentPath = path.join(dirent.path, dirent.name);
+      const componentName = path.basename(dirent.name, extension);
+
+      htmlContent = htmlContent.replaceAll(
+        `{{${componentName}}}`,
+        await readFile(componentPath, 'utf-8'),
+      );
+    }
+  }
+
+  await writeFile(targetPath, htmlContent, { flag: 'w' });
 }
