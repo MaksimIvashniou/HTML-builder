@@ -1,5 +1,7 @@
 const path = require('path');
 const { readFile, writeFile, rm, mkdir, readdir } = require('fs/promises');
+const copyDir = require('../04-copy-directory/copyDir');
+const mergeStyles = require('../05-merge-styles/mergeStyles');
 
 const sourcePath = {
   template: path.join(__dirname, 'template.html'),
@@ -42,3 +44,21 @@ async function buildHtml(sourcePath, targetPath) {
 
   await writeFile(targetPath, htmlContent, { flag: 'w' });
 }
+
+async function buildPage(sourcePath, targetPath) {
+  await buildDist(targetPath.dist);
+
+  await buildHtml(
+    {
+      template: sourcePath.template,
+      components: sourcePath.components,
+    },
+    targetPath.html,
+  );
+
+  await copyDir(sourcePath.assets, targetPath.assets);
+
+  await mergeStyles(sourcePath.styles, targetPath.styles);
+}
+
+buildPage(sourcePath, bundle);
