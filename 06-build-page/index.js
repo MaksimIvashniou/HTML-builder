@@ -1,7 +1,12 @@
 const path = require('path');
-const { readFile, writeFile, rm, mkdir, readdir } = require('fs/promises');
-const copyDir = require('../04-copy-directory/copyDir');
-const mergeStyles = require('../05-merge-styles/mergeStyles');
+const {
+  readFile,
+  writeFile,
+  rm,
+  mkdir,
+  readdir,
+  copyFile,
+} = require('fs/promises');
 
 const sourcePath = {
   template: path.join(__dirname, 'template.html'),
@@ -43,6 +48,41 @@ async function buildHtml(sourcePath, targetPath) {
   }
 
   await writeFile(targetPath, htmlContent, { flag: 'w' });
+}
+
+async function copyDir(sourceDir, targetDir) {
+  const dirents = await readdir(sourceDir, { withFileTypes: true });
+
+  await rm(targetDir, { recursive: true, force: true });
+  await mkdir(targetDir, { recursive: true });
+
+  for (const dirent of dirents) {
+    const [source, target] = [
+      path.join(sourceDir, dirent.name),
+      path.join(targetDir, dirent.name),
+    ];
+
+    dirent.isDirectory()
+      ? await copyDir(source, target)
+      : await copyFile(source, target);
+  }
+}
+
+async function mergeStyles(sourcePath, targetPath) {
+  const extension = '.css';
+  const styles = [];
+
+  const dirents = await readdir(sourcePath, { withFileTypes: true });
+
+  for (const dirent of dirents) {
+    if (dirent.isFile() && path.extname(dirent.name) === extension) {
+      const stylePath = path.join(dirent.path, dirent.name);
+
+      styles.push(`/* ${dirent.name} */`, await readFile(stylePath, 'utf-8'));
+    }
+  }
+
+  await writeFile(targetPath, styles.join('\n'), { flag: 'w' });
 }
 
 async function buildPage(sourcePath, targetPath) {
